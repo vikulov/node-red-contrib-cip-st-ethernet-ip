@@ -363,7 +363,7 @@ module.exports = function (RED) {
         const tagName = config.program ? `Program:${config.program}.${config.variable}` : config.variable;
 
         function onChanged(tag, lastValue) {
-            let data = tag.controller_value;
+            let data = tag.value;
             let key = tag.name || '';
             let msg = {
                 payload: data,
