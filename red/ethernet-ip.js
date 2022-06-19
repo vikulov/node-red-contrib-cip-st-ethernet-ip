@@ -1,4 +1,3 @@
-//@ts-check
 /*
   Copyright: (c) 2016-2020, St-One Ltda., Guilherme Francescon Cittolin <guilherme@st-one.io>
   GNU General Public License v3.0+ (see LICENSE or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -19,9 +18,13 @@ module.exports = function (RED) {
     "use strict";
 
     const eip = require('st-ethernet-ip');
-    const { Controller, Tag, TagGroup, Structure, TagList } = eip;
+    const { Controller, Tag, TagGroup, Structure, TagList, Browser} = eip;
     const { Types } = eip.EthernetIP.CIP.DataTypes;
     const { EventEmitter } = require('events');
+
+    // ---------- Ethernet-IP Browser ----------
+
+    const browser = new Browser();
 
     // ---------- Ethernet-IP Endpoint ----------
 
@@ -335,7 +338,7 @@ module.exports = function (RED) {
             }
 
             connected = false;
-            plc = new Controller(false, { unconnectedSendTimeout: 5064 });
+            plc = new Controller(config.connectedMess, { unconnectedSendTimeout: 5064 });
             plc.timeout_sp = timeout;
             plc.on("error", onControllerError);
             plc.on("close", onControllerClose);
@@ -481,4 +484,19 @@ module.exports = function (RED) {
 
     }
     RED.nodes.registerType("eth-ip out", EthIpOut);
+
+    // PLC, Tag Browser
+    RED.httpAdmin.get("/eth-ip", RED.auth.needsPermission("eth-ip.read"), function(req,res) {
+        res.json(browser.deviceList)
+    });
+
+    const browsedPLC = new Controller(false);
+    RED.httpAdmin.post("/eth-ip-tag", RED.auth.needsPermission("eth-ip.write"), function(req,res) {
+        browsedPLC.connect(req.body.plcAddress)
+        .then(() => {
+            res.json(browsedPLC.tagList)
+            browsedPLC.disconnect()
+        })
+    }); 
+
 };
