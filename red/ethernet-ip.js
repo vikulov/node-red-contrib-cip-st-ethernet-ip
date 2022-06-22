@@ -218,10 +218,7 @@ module.exports = function (RED) {
             }
             plc.removeListener("Error", onControllerError);
             plc.removeListener("Connected", onConnect)
-            plc = null;
-            plcManager = null;
-            closing = false;
-            done()
+            plc.disconnect().then(done);
         }
 
         function connect() {
@@ -293,6 +290,7 @@ module.exports = function (RED) {
 
             if (!tag) {
                 //shouldn't reach here. But just in case..
+                console.log('Ethip In')
                 return node.error(RED._("ethip.error.invalidvar", { varname: tagName }));
             }
 
