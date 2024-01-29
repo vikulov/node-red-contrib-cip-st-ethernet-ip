@@ -111,8 +111,10 @@
 				<a href="#" class="editor-button editor-button-small eth-ip-vars-btn-import" style="margin: 4px; float: right"><i class="fa fa-upload"></i> <span data-i18n="ethip.endpoint.label.variables.import"></span></a>
 			</div>
 			<p><b>Tag Browser</b></p>
-			<div class="form-row plc-list plc-tag">
-				<ul id="node-config-browser-tag-container"><li>Click On PLC Browser Address To Update List</li></ul>
+			<div class="form-row node-config-browser-tags-container-row" style="margin-bottom:0;">
+				<div id="node-config-browser-tags-container" style="min-height: 150px;border: 1px solid #ccc;border-radius: 5px;overflow: scroll;">
+					<ul id="node-config-browser-tags"><li>Click On PLC Browser Address To Update List</li></ul>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -215,7 +217,7 @@
 			var btnImport = $('.eth-ip-vars-btn-import');
 			var btnExport = $('.eth-ip-vars-btn-export');
 			var browser = $("#node-config-browser-container");
-			var tagList = $("#node-config-browser-tag-container");
+			var tagList = $("#node-config-browser-tags");
 
 			// Prepare tabs
 			var tabs = RED.tabs.create({
