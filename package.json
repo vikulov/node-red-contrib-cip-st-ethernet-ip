@@ -8,10 +8,10 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/st-one-io/node-red-contrib-cip-ethernet-ip.git"
+        "url": "https://github.com/SerafinTech/node-red-contrib-cip-st-ethernet-ip.git"
     },
     "bugs": {
-        "url": "https://github.com/st-one-io/node-red-contrib-cip-ethernet-ip/issues"
+        "url": "https://github.com/SerafinTech/node-red-contrib-cip-st-ethernet-ip/issues"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
