@@ -18,7 +18,7 @@ module.exports = function (RED) {
     "use strict";
 
     const eip = require('st-ethernet-ip');
-    const { Controller, Tag, TagGroup, Structure, TagList, Browser, ControllerManager} = eip;
+    const { Controller, Tag, TagGroup, Structure, TagList, Browser, ControllerManager } = eip;
     const { Types } = eip.EthernetIP.CIP.DataTypes;
     const { EventEmitter } = require('events');
 
@@ -125,10 +125,11 @@ module.exports = function (RED) {
 
                         const obj = config.vartable[prog][varname];
                         const type = (obj.type || '').toString().toUpperCase();
+                        const mapping = obj.mapping || varname;
                         const dt = Types[type] || null;
 
                         if (isVerbose) {
-                            node.log(RED._("ethip.info.tagregister") + `: Name:[${varname}], Prog:[${prog}], Type:[${dt}](${type})`);
+                            node.log(RED._("ethip.info.tagregister") + `: Name:[${varname}], Prog:[${prog}], Type:[${dt}](${type}), Mapping:[${mapping}]`);
                         }
 
                         if (!Tag.isValidTagname(varname)) {
@@ -136,9 +137,16 @@ module.exports = function (RED) {
                             continue;
                         }
 
+                        if (!Tag.isValidTagname(mapping)) {
+                            // Probably need a more apropriate test than isValidTagname
+                            node.warn(RED._("ethip.warn.invalidmappingname", { name: mapping }));
+                            mapping = null;
+                        }
+
                         const tagName = prog ? `Program:${prog}.${varname}` : varname;
                         const tag = plc.addTag(varname, prog || null);
 
+                        tag.mapping = mapping;
                         tag.on('Initialized', onTagChanged);
                         tag.on('Changed', onTagChanged);
 
@@ -153,15 +161,14 @@ module.exports = function (RED) {
         node.getStatus = () => status;
         node.getTag = t => tags.get(t);
         node.getTags = () => tags;
-        node.getAllTagValues = () => {
-            let res = {};
+        node.getAllTags = () => {
+            let res = [];
 
             if (plc.PLC) {
-            plc.PLC.forEach(tag => {
-                res[tag.name] = tag.value;
-            });
+                plc.PLC.forEach(tag => {
+                    res.push(tag);
+                });
             }
-
             return res;
         };
 
@@ -181,7 +188,8 @@ module.exports = function (RED) {
             });
         }
 
-        function onTagChanged(tag, lastValue) {
+        function onTagChanged(tag, lastValue = null) {
+            // Be sure to register changes to timestamp flag.
             node.emit('#__CHANGED__', tag, lastValue);
             tagChanged = true;
             node.emit('#__ALL_CHANGED__');
@@ -192,8 +200,6 @@ module.exports = function (RED) {
             createTags();
             connected = true;
             manageStatus('online');
-            
-           
         }
 
 
@@ -210,7 +216,6 @@ module.exports = function (RED) {
             manageStatus('offline');
             connected = false;
             closing = true;
-            
             
             for (let tag of tags.values()) {
                 tag.removeListener('Initialized', onTagChanged);
@@ -248,6 +253,7 @@ module.exports = function (RED) {
     function EthIpIn(config) {
         const node = this;
         let statusVal, tag;
+
         RED.nodes.createNode(this, config);
 
         node.endpoint = RED.nodes.getNode(config.endpoint);
@@ -257,23 +263,60 @@ module.exports = function (RED) {
 
         const tagName = config.program ? `Program:${config.program}.${config.variable}` : config.variable;
 
+        function gatherTag(tag) {
+            let object = {
+                value: tag.value,
+                topic: tag.mapping || tag.name || ''
+            }
+
+            if (config.includeTimestamp) {
+                object.timestamp = tag.timestamp_raw.getTime()/1000;
+            }
+
+            return object;
+        }
+
         function onChanged(tag, lastValue) {
             let data = tag.value;
-            let key = tag.name || '';
-            let msg = {
-                payload: data,
-                topic: key,
-                lastValue: lastValue
-            };
+            let key = tag.mapping || tag.name || '';
+            let msg = {};
 
+            if (config.gatherMetrics) {
+                msg.payload = gatherTag(tag);
+                msg.payload.lastValue = lastValue;
+            } else {
+                msg = {
+                    payload: data,
+                    topic: key,
+                }
+                if (config.includeTimestamp) {
+                    msg.timestamp = tag.timestamp_raw.getTime()/1000;
+                }
+                msg.lastValue = lastValue;
+            }
+ 
             node.send(msg);
             node.status(generateStatus(node.endpoint.getStatus(), config.mode === 'single' ? data : null));
         }
 
         function onChangedAllValues() {
-            let msg = {
-                payload: node.endpoint.getAllTagValues()
-            };
+            let payload = {};
+            let tags = node.endpoint.getAllTags();
+            let timestamps = {};
+
+            tags.forEach(tag => {
+                if (config.gatherMetrics) {
+                    payload[tag.name] = gatherTag(tag);
+                } else {
+                    payload[tag.mapping || tag.name] = tag.value;
+                    timestamps[tag.mapping || tag.name] = tag.timestamp_raw.getTime()/1000.0;
+                }
+            });
+
+            let msg = { payload: payload };
+            if (!config.gatherMetrics && config.includeTimestamp) {
+                msg.timestamp = timestamps;
+            }
 
             node.send(msg);
             node.status(generateStatus(node.endpoint.getStatus()));
