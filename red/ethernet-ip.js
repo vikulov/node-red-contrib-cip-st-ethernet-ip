@@ -430,8 +430,12 @@ module.exports = function (RED) {
     RED.httpAdmin.post("/eth-ip-tag", RED.auth.needsPermission("eth-ip.write"), function(req,res) {
         browsedPLC.connect(req.body.plcAddress)
         .then(() => {
-            res.json(browsedPLC.tagList)
-            browsedPLC.disconnect()
+            res.json(browsedPLC.tagList);
+            browsedPLC.disconnect();
+        })
+        .catch(e => {
+            console.log(e);
+            browsedPLC.disconnect();
         })
     }); 
 
