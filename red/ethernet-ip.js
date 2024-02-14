@@ -149,6 +149,7 @@ module.exports = function (RED) {
                         tag.mapping = mapping;
                         tag.on('Initialized', onTagChanged);
                         tag.on('Changed', onTagChanged);
+                        tag.on('Unknown', onTagUnknown);
 
                         tags.set(tagName, tag);
                     }
@@ -188,6 +189,10 @@ module.exports = function (RED) {
             });
         }
 
+        function onTagUnknown(tag) {
+            node.emit('Unknown', tag);
+        }
+
         function onTagChanged(tag, lastValue = null) {
             // Be sure to register changes to timestamp flag.
             node.emit('#__CHANGED__', tag, lastValue);
@@ -220,6 +225,7 @@ module.exports = function (RED) {
             for (let tag of tags.values()) {
                 tag.removeListener('Initialized', onTagChanged);
                 tag.removeListener('Changed', onTagChanged);
+                tag.removeListener('Unknown', onTagUnknown);
             }
             plc.removeListener("Error", onControllerError);
             plc.removeListener("Connected", onConnect)
@@ -276,6 +282,38 @@ module.exports = function (RED) {
             return object;
         }
 
+        function onUnknown(tag) {
+            if (!config.addErrorOutput) {
+                return null;
+            }
+            let msg = {};
+
+            const key = tag.name || '';
+            const map = tag.mapping || key;
+            const data = "Tag does not exist on PLC";
+
+            if (config.gatherMetrics) {
+                msg.error = {
+                  description: data,
+                  tag: key,
+                  topic: map
+                };
+                if (config.includeTimestamp) {
+                    msg.error.timestamp = tag.timestamp_raw.getTime()/1000;
+                }
+            } else {
+                msg.error = data;
+                msg.tag = key;
+                msg.topic = map;
+                if (config.includeTimestamp) {
+                    msg.timestamp = tag.timestamp_raw.getTime()/1000;
+                }
+            }
+
+            node.send([null, msg]);
+            node.status(generateStatus(node.endpoint.getStatus()));
+        }
+
         function onChanged(tag, lastValue) {
             let data = tag.value;
             let key = tag.mapping || tag.name || '';
@@ -294,8 +332,8 @@ module.exports = function (RED) {
                 }
                 msg.lastValue = lastValue;
             }
- 
-            node.send(msg);
+
+            config.addErrorOutput ? node.send([msg, null]) : node.send(msg);
             node.status(generateStatus(node.endpoint.getStatus(), config.mode === 'single' ? data : null));
         }
 
@@ -318,7 +356,7 @@ module.exports = function (RED) {
                 msg.timestamp = timestamps;
             }
 
-            node.send(msg);
+            config.addErrorOutput ? node.send([msg, null]) : node.send(msg);
             node.status(generateStatus(node.endpoint.getStatus()));
         }
 
@@ -339,12 +377,16 @@ module.exports = function (RED) {
 
             tag.on('Initialized', onChanged);
             tag.on('Changed', onChanged);
+            if (config.addErrorOutput) {
+                tag.on('Unknown', onUnknown);
+            }
         }
 
         function unloadTag() {
             if (tag) {
                 tag.removeListener('Initialized', onChanged);
                 tag.removeListener('Changed', onChanged);
+                tag.removeListener('Unknown', onUnknown);
             }
         }
 
@@ -359,8 +401,12 @@ module.exports = function (RED) {
         } else {
             node.endpoint.on('#__ALL_CHANGED__', onChangedAllValues);
         }
+        if (config.mode !== 'single' && config.addErrorOutput) {
+            node.endpoint.on('Unknown', onUnknown);
+        }
 
         node.on('close', function (done) {
+            node.endpoint.removeListener('Unknown', onUnknown);
             node.endpoint.removeListener('#__ALL_CHANGED__', onChanged);
             node.endpoint.removeListener('#__ALL_CHANGED__', onChangedAllValues);
             node.endpoint.removeListener('#__STATUS__', onEndpointStatus);

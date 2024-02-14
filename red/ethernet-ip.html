@@ -558,6 +558,11 @@
         <label style="width: 60%;" for="node-input-includeTimestamp"><i class="fa fa-clock-o"></i> <span data-i18n="ethip.in.label.includeTimestamp"></span></label>
         <input type="checkbox" id="node-input-includeTimestamp" style="width: 20px; vertical-align: middle;">
     </div>
+    <div class="form-row">
+        <label style="width: 60%;" for="node-input-addErrorOutput"><i class="fa fa-bug"></i> <span data-i18n="ethip.in.label.addErrorOutput"></span></label>
+        <input type="checkbox" id="node-input-addErrorOutput" style="width: 20px; vertical-align: middle;">
+        <input type="hidden" id="node-input-outputs" value="1">
+    </div>
 </script>
 
 <script type="text/javascript">
@@ -589,7 +594,9 @@
                         },
                     includeTimestamp: {
                             value: false
-                        }
+                        },
+                    addErrorOutput: { value: false },
+                    outputs: { value: 1 }
                 },
             color: "#D19BA1",
             inputs: 0,
@@ -621,6 +628,7 @@
                     var modeList = $('#node-input-mode');
                     var endpointList = $("#node-input-endpoint");
                     var varDivs = $('.ethip-input-var-row');
+                    var errorOutput = $('#node-input-addErrorOutput');
                     var vars = {};
 
                     function cleanupLists(cleanProg) {
@@ -683,6 +691,19 @@
                         });
                     updateProgList(self.endpoint);
 
+                    if (this.outputs == 2) {
+                            errorOutput.prop('checked', true);
+                    } else {
+                            errorOutput.prop('checked', false);
+                    }
+                    errorOutput.change(function () {
+                        if (errorOutput.is(":checked")) {
+                            $('#node-input-outputs').val(2);
+                        } else {
+                            $('#node-input-outputs').val(1);
+                        }
+                    });
+
                     modeList.change(function () {
                             if (modeList.val() == "single") {
                                     varDivs.show();
@@ -698,7 +719,7 @@
                     var varValue = $('#node-input-variable').val();
                     var gatherMetricsValue = $('#node-input-gatherMetrics').val();
                     var includeTimestampValue = $('#node-input-includeTimestamp').val();
-
+                    var addErrorOutputValue = $('#node-input-addErrorOutput').val();
 
                     if(!endpointNode) return;
 
@@ -711,6 +732,7 @@
                         }
                     endpointNode.gatherMetrics = gatherMetricsValue;
                     endpointNode.includeTimestamp = includeTimestampValue;
+                    endpointNode.addErrorOutput = addErrorOutputValue;
                 }
         });
 </script>
