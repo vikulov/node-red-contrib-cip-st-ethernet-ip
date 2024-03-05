@@ -64,6 +64,57 @@
                         (Only when <b>Include timestamp</b> is checked).
                 </dd>
         </dl>
+        <p>If <b>Add error output</b> is checked</p>
+        <p>
+                An extra output is created on the node. This output contains errors from the node (as of writing
+                only unknown tags is sent on this output).
+        </p>
+        <p>If <b>Group metric data</b> is unchecked</p>
+        <dl class="message-properties">
+                <p>Only on 2. (error) output:</p>
+                <dt>error<span class="property-type">string</span></dt>
+                <dd>
+                        Error description.
+                </dd>
+                <dt>tag<span class="property-type">string</span></dt>
+                <dd>
+                        The name of the problematic variable on PLC.
+                </dd>
+                <dt>topic<span class="property-type">string</span></dt>
+                <dd>
+                        The name of the problematic mapping (or tag) on PLC.
+                </dd>
+                <dt>timestamp<span class="property-type">timestamp</span></dt>
+                <dd>
+                        Timestamp when error occurred.
+                        (Only when <b>Include timestamp</b> is checked).
+                </dd>
+        </dl>
+        <p>If <b>Group metric data</b> is checked</p>
+        <dl class="message-properties">
+                <p>Only on 2. (error) output:</p>
+                <dt>error<span class="property-type">object</span></dt>
+                <dd>
+                        Object containing error data
+                </dd>
+                <dt>error.description<span class="property-type">string</span></dt>
+                <dd>
+                        Error description.
+                </dd>
+                <dt>error.tag<span class="property-type">string</span></dt>
+                <dd>
+                        The name of the problematic variable on PLC.
+                </dd>
+                <dt>error.topic<span class="property-type">string</span></dt>
+                <dd>
+                        The name of the problematic mapping (or tag) on PLC.
+                </dd>
+                <dt>object.timestamp<span class="property-type">timestamp</span></dt>
+                <dd>
+                        Timestamp when error occurred.
+                        (Only when <b>Include timestamp</b> is checked).
+                </dd>
+        </dl>
 	<h3>Details</h3>
 	<p>
 		All data is read cyclically from the PLC as configured in the <i>ethip endpoint</i>, 
