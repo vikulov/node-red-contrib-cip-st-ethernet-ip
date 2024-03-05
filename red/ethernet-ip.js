@@ -259,6 +259,7 @@ module.exports = function (RED) {
     function EthIpIn(config) {
         const node = this;
         let statusVal, tag;
+        let unknownThrown = false;
 
         RED.nodes.createNode(this, config);
 
@@ -284,33 +285,37 @@ module.exports = function (RED) {
 
         function onUnknown(tag) {
             if (!config.addErrorOutput) {
-                return null;
-            }
-            let msg = {};
-
-            const key = tag.name || '';
-            const map = tag.mapping || key;
-            const data = "Tag does not exist on PLC";
-
-            if (config.gatherMetrics) {
-                msg.error = {
-                  description: data,
-                  tag: key,
-                  topic: map
-                };
-                if (config.includeTimestamp) {
-                    msg.error.timestamp = tag.timestamp_raw.getTime()/1000;
+                if (!unknownThrown) {
+                    node.error(new Error(`${tag.mapping || tag.name} Tag does not exist on PLC`));
+                    unknownThrown = true;
                 }
             } else {
-                msg.error = data;
-                msg.tag = key;
-                msg.topic = map;
-                if (config.includeTimestamp) {
-                    msg.timestamp = tag.timestamp_raw.getTime()/1000;
-                }
-            }
+                let msg = {};
 
-            node.send([null, msg]);
+                const key = tag.name || '';
+                const map = tag.mapping || key;
+                const data = "Tag does not exist on PLC";
+
+                if (config.gatherMetrics) {
+                    msg.error = {
+                    description: data,
+                    tag: key,
+                    topic: map
+                    };
+                    if (config.includeTimestamp) {
+                        msg.error.timestamp = tag.timestamp_raw.getTime()/1000;
+                    }
+                } else {
+                    msg.error = data;
+                    msg.tag = key;
+                    msg.topic = map;
+                    if (config.includeTimestamp) {
+                        msg.timestamp = tag.timestamp_raw.getTime()/1000;
+                    }
+                }
+
+                node.send([null, msg]);
+            }
             node.status(generateStatus(node.endpoint.getStatus()));
         }
 
@@ -377,9 +382,7 @@ module.exports = function (RED) {
 
             tag.on('Initialized', onChanged);
             tag.on('Changed', onChanged);
-            if (config.addErrorOutput) {
-                tag.on('Unknown', onUnknown);
-            }
+            tag.on('Unknown', onUnknown);
         }
 
         function unloadTag() {
