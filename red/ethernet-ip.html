@@ -74,8 +74,8 @@
             <div class="form-row">
                 <label for="node-config-input-address"><i class="fa fa-globe"></i> <span data-i18n="ethip.endpoint.label.address"></span></label>
                 <input class="input-append-left" type="text" id="node-config-input-address" data-i18n="[placeholder]ethip.endpoint.label.address" style="width: 40%;">
-                <label for="node-config-input-slot" style="margin-left: 10px; width: 35px; "> <span data-i18n="ethip.endpoint.label.slot"></span></label>
-                <input type="text" id="node-config-input-slot" data-i18n="[placeholder]ethip.endpoint.label.port" style="width: 50px">
+                <label for="node-config-input-path" style="margin-left: 10px; width: 35px; "> <span data-i18n="ethip.endpoint.label.path"></span></label>
+                <input type="text" id="node-config-input-path" data-i18n="[placeholder]ethip.endpoint.label.port" style="width: 50px">
             </div>
             <div class="form-row">
                 <label for="node-config-input-cycletime"><i class="fa fa-refresh"></i> <span data-i18n="ethip.endpoint.label.cycletime"></span></label>
@@ -172,9 +172,8 @@
                                     value: "",
                                     validate: RED.validators.regex(/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/)
                                 },
-                            slot: {
-                                    value: "0",
-                                    validate: RED.validators.number()
+                            path: {
+                                    value: "1,0"
                                 },
                             cycletime: {
                                     value: 3000
@@ -200,7 +199,7 @@
                                 }
                         },
                     label: function() {
-                            return this.name || this.address + ":" + this.slot;
+                            return this.name || this.address + ":" + this.path;
                         },
                     oneditprepare: function() {
                             var self = this;

@@ -20,6 +20,7 @@ module.exports = function (RED) {
     const eip = require('st-ethernet-ip');
     const { Controller, Tag, TagGroup, Structure, TagList, Browser, ControllerManager } = eip;
     const { Types } = eip.EthernetIP.CIP.DataTypes;
+    const { Port } = eip.EthernetIP.CIP.EPATH.segments;
     const { EventEmitter } = require('events');
 
     // ---------- Ethernet-IP Browser ----------
@@ -235,17 +236,22 @@ module.exports = function (RED) {
         function connect() {
             connected = false;
             plcManager = new ControllerManager()
-            plc = plcManager.addController(config.address, Number(config.slot) || 0, parseInt(config.cycletime) || 100, config.connectedMess, 5000, { unconnectedSendTimeout: 5064 })
+            let plcPath = buildPath(config.path)  
+            plc = plcManager.addController(config.address, plcPath || 0, parseInt(config.cycletime) || 100, config.connectedMess, 5000, { unconnectedSendTimeout: 5064 })
             plc.connect()
             manageStatus('connecting');
 
             if (isVerbose) {
-                node.log(RED._("ethip.info.connect") + `: ${config.address} / ${config.slot}`);
+                node.log(RED._("ethip.info.connect") + `: ${config.address} / ${config.path}`);
             }
 
             plc.on("Error", onControllerError);
             plc.on("Connected", onConnect)
             
+        }
+
+        function buildPath(path) {
+            return path.split(',').map((elem) => Number(elem)).reduce((acc, elem, idx, data) => (idx % 2 === 0) ? Buffer.concat([acc, Port.buid(data[idx], data[idx + 1])]) : acc, [])
         }
 
         node.on('close', onNodeClose);
